@@ -1,0 +1,5 @@
+
+let mat: matrix = 4x5;
+let mat2: matrix = 5x4;
+let dot: matrix = mat.mat2;
+let mul: matrix = mat*mat2;
