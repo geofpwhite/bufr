@@ -11,7 +11,7 @@ pub fn execute(path: []const u8, allocator: std.mem.Allocator) !void {
     var tokens = try lexer.tokenize(allocator);
     var parser = Parser.new(tokens.items, allocator);
     var tree = try parser.Parse();
-    var eval = State.new(tree);
+    var eval = State.new(tree, allocator);
     try eval.Eval();
     defer {
         // free each token slice

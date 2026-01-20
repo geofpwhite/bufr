@@ -1,6 +1,6 @@
 
 let y= 4;
-let mat= 4x5;
-let mat2= 5x4;
-let dot= mat.mat2;
-let mul= mat*mat2;
+// let mat= 4x5;
+// let mat2= 5x4;
+// let dot= mat.mat2;
+// let mul= mat*mat2;

@@ -49,7 +49,6 @@ pub const astValue = union(enum) {
     array_operator: array_operator,
     special_token: special_token,
     matrix: matrix,
-
     keyword: keyword,
 
     pub fn toString(self: astValue, allocator: std.mem.Allocator) ![]u8 {

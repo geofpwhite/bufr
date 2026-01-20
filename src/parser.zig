@@ -18,6 +18,7 @@ const parserError = error{
     RootKeyword,
     RootOperator,
     AllocFailed,
+    InvalidToken,
 };
 
 pub const parser = struct {
@@ -52,6 +53,11 @@ pub const parser = struct {
             return parserError.AllocFailed;
         };
 
+        const id = expression;
+
+        if (std.fmt.parseInt(i64, id, 10)) |n| {
+            newNode.*.value = .{ .digits = n };
+        } else |_| {}
         if (cur.value) |v| {
             if (v == .keyword) {
                 const kw = v.keyword;
@@ -63,34 +69,30 @@ pub const parser = struct {
             }
         }
         if (root) {
-            if (cur.right) |right| {
-                if (right.value) |val| {
+            if (cur.right) |right|
+                if (right.value) |val|
                     if (val == .operator) {
                         var newCur = cur;
-                        newCur.right.?.right.? = newNode;
+                        newCur.right.?.right = newNode;
                         return self.parse(root, newCur, index);
-                    }
-                }
-            }
+                    };
             var newCur = cur;
             newCur.right = newNode;
             return self.parse(root, newCur, index);
         } else {
-            if (cur.value) |val| {
-                switch (val) {
-                    .keyword => {
-                        var newCur = cur;
-                        newCur.right = newNode;
-                        return self.parse(root, newCur, index);
-                    },
-                    .operator => {
-                        var newCur = cur;
-                        newCur.right = newNode;
-                        return self.parse(root, newCur, index);
-                    },
-                    else => {},
-                }
-            }
+            if (cur.value) |val| switch (val) {
+                .keyword => {
+                    var newCur = cur;
+                    newCur.right = newNode;
+                    return self.parse(root, newCur, index);
+                },
+                .operator => {
+                    var newCur = cur;
+                    newCur.right = newNode;
+                    return self.parse(root, newCur, index);
+                },
+                else => {},
+            };
             return self.parse(root, newNode.*, index);
         }
     }

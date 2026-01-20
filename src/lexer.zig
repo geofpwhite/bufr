@@ -61,6 +61,7 @@ pub const lexer = struct {
                         self.readPosition += 1;
                         self.bufferPosition = 0;
                     } else {
+                        try self.addCur(&tokens, allocator);
                         self.buffer[0] = self.ch;
                         self.bufferPosition = 1;
                         try self.addCur(&tokens, allocator);
@@ -79,6 +80,7 @@ pub const lexer = struct {
                         newToken[1] = self.ch;
                         tokens.items[tokens.items.len - 1] = newToken;
                     } else {
+                        try self.addCur(&tokens, allocator);
                         self.buffer[self.bufferPosition] = self.ch;
                         self.bufferPosition += 1;
                         try self.addCur(&tokens, allocator);
@@ -93,6 +95,7 @@ pub const lexer = struct {
                         tokens.items[tokens.items.len - 1] = newToken;
                     } else {
                         // change prev from "<" to "<="
+                        try self.addCur(&tokens, allocator);
                         self.buffer[self.bufferPosition] = self.ch;
                         self.bufferPosition += 1;
                         try self.addCur(&tokens, allocator);
@@ -109,6 +112,7 @@ pub const lexer = struct {
                         newToken[1] = '>';
                         tokens.items[tokens.items.len - 1] = newToken;
                     } else {
+                        try self.addCur(&tokens, allocator);
                         self.buffer[self.bufferPosition] = self.ch;
                         self.bufferPosition += 1;
                         try self.addCur(&tokens, allocator);
@@ -116,7 +120,8 @@ pub const lexer = struct {
                 },
                 '=' => {
                     const prev = (tokens.items[tokens.items.len - 1]);
-                    if (std.mem.eql(u8, prev, "=") or std.mem.eql(u8, prev, "<") or std.mem.eql(u8, prev, ">")) {
+                    if (prev[0] == '=' or prev[0] == '<' or prev[0] == '>') {
+                        std.debug.print("Equal sign found\n", .{});
 
                         // change prev from "=" to "=="
                         const hold = prev[0];
@@ -126,6 +131,7 @@ pub const lexer = struct {
                         newToken[1] = '=';
                         tokens.items[tokens.items.len - 1] = newToken;
                     } else {
+                        try self.addCur(&tokens, allocator);
                         self.buffer[self.bufferPosition] = self.ch;
                         self.bufferPosition += 1;
                         try self.addCur(&tokens, allocator);
