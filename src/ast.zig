@@ -6,6 +6,7 @@ const inequality = @import("operators.zig").Inequality;
 const token = @import("types.zig").token;
 const special_token = @import("special_tokens.zig").SpecialToken;
 const keyword = @import("keywords.zig").Keyword;
+const matrix = @import("types.zig").Matrix;
 
 pub const ast = struct {
     statements: ?std.ArrayList(astNode),
@@ -47,6 +48,8 @@ pub const astValue = union(enum) {
     inequality: inequality,
     array_operator: array_operator,
     special_token: special_token,
+    matrix: matrix,
+
     keyword: keyword,
 
     pub fn toString(self: astValue, allocator: std.mem.Allocator) ![]u8 {
@@ -58,6 +61,7 @@ pub const astValue = union(enum) {
             .array_operator => |array_op| return try std.fmt.allocPrint(allocator, "{s}", .{array_op.toString()}),
             .special_token => |special| return try std.fmt.allocPrint(allocator, "{s}", .{special.toString()}),
             .keyword => |kword| return try std.fmt.allocPrint(allocator, "{s}", .{kword.toString()}),
+            .matrix => |mat| return try std.fmt.allocPrint(allocator, "{s}", .{mat.toString()}),
         }
     }
 };

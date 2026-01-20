@@ -41,9 +41,13 @@ pub const Operator = enum {
 };
 pub const ArrayOperator = enum {
     Add,
+    Dot,
+    Mul,
     pub fn toString(self: ArrayOperator) []const u8 {
         return switch (self) {
             .Add => "+",
+            .Dot => ".",
+            .Mul => "*",
         };
     }
 };

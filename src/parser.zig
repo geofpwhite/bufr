@@ -12,6 +12,7 @@ const lexer = @import("lexer.zig");
 const token = lexer.token;
 const Ast = @import("ast.zig");
 const ast = Ast.ast;
+const Type = @import("types.zig").Type;
 
 const parserError = error{
     RootKeyword,
@@ -84,7 +85,7 @@ pub const parser = struct {
                     },
                     .operator => {
                         var newCur = cur;
-                        newCur.right.? = newNode;
+                        newCur.right = newNode;
                         return self.parse(root, newCur, index);
                     },
                     else => {},
@@ -252,6 +253,36 @@ pub const parser = struct {
         }
         return self.parse(root, newCur, index);
     }
+    pub fn parse_matrix(self: *parser, root: bool, cur: Ast.astNode, index: usize) parserError!ast {
+        const cur_token = self.input[index];
+        const newNode = self.allocator.create(Ast.astNode) catch {
+            return parserError.AllocFailed;
+        };
+        const index_x = std.mem.indexOf(u8, cur_token, "x");
+        self.references.append(self.allocator, newNode) catch {
+            return parserError.AllocFailed;
+        };
+        var before_x: usize = 0;
+        var after_x: usize = 0;
+        if (index_x) |x_index| {
+            before_x = std.fmt.parseInt(usize, cur_token[0..x_index], 10) catch {
+                return parserError.AllocFailed;
+            };
+            after_x = std.fmt.parseInt(usize, cur_token[x_index + 1 ..], 10) catch {
+                return parserError.AllocFailed;
+            };
+        }
+        newNode.* = Ast.astNode{
+            .value = .{ .matrix = Type.matrix(self.allocator, before_x, after_x) catch {
+                return parserError.AllocFailed;
+            } },
+            .left = null,
+            .right = null,
+        };
+        var newCur = cur;
+        newCur = cur;
+        return self.parse(root, newCur, index);
+    }
 
     pub fn Parse(self: *parser) parserError!ast {
         return self.parse(false, Ast.astNode{ .left = null, .right = null, .value = null }, 0);
@@ -282,7 +313,22 @@ pub const parser = struct {
         if (special) |spec| {
             return self.parse_special_token(root, cur, new_index, spec);
         }
+        if (try self.scan_for_matrix_init(index)) {
+            return self.parse_matrix(root, cur, new_index);
+        }
 
         return self.parse_expression(root, cur, new_index, cur_token);
+    }
+
+    fn scan_for_matrix_init(self: *parser, index: usize) parserError!bool {
+        var check_index: usize = 0;
+        const check = self.input[index];
+        while (check_index < check.len and ('0' <= check[check_index] and check[check_index] <= '9')) {
+            check_index += 1;
+        }
+        if (check_index < check.len and check[check_index] == 'x') {
+            return true;
+        }
+        return false;
     }
 };

@@ -37,10 +37,12 @@ pub const lexer = struct {
             const slice: []const u8 = &[_]u8{self.ch};
             const s = special_tokens.SPECIAL_TOKEN_MAP.get(slice);
             const o = operators.OPERATOR_MAP.get(slice);
-
-            if (o != null or s != null and std.mem.indexOf(u8, "=><&|", slice) != null) {
+            const index = std.mem.indexOf(u8, ">=<&|/", slice);
+            if ((o != null or s != null) and index == null) {
+                if (self.ch == '=') {
+                    std.debug.print("Equal sign found\n", .{});
+                }
                 try self.addCur(&tokens, allocator);
-
                 self.buffer[0] = self.ch;
                 self.bufferPosition = 1;
                 try self.addCur(&tokens, allocator);
@@ -48,6 +50,22 @@ pub const lexer = struct {
             }
 
             switch (self.ch) {
+                '/' => {
+                    const prev = (tokens.items[tokens.items.len - 1]);
+                    if (std.mem.eql(u8, slice, prev)) {
+                        allocator.free(prev);
+                        _ = tokens.pop();
+                        while (self.readPosition < self.input.len and self.input[self.readPosition] != '\n' and self.input[self.readPosition] != '\r') {
+                            self.readPosition += 1;
+                        }
+                        self.readPosition += 1;
+                        self.bufferPosition = 0;
+                    } else {
+                        self.buffer[0] = self.ch;
+                        self.bufferPosition = 1;
+                        try self.addCur(&tokens, allocator);
+                    }
+                },
                 ' ', '\n', '\r' => {
                     try self.addCur(&tokens, allocator);
                 },
@@ -98,11 +116,9 @@ pub const lexer = struct {
                 },
                 '=' => {
                     const prev = (tokens.items[tokens.items.len - 1]);
-                    std.debug.print("prev: {s}\n", .{prev});
                     if (std.mem.eql(u8, prev, "=") or std.mem.eql(u8, prev, "<") or std.mem.eql(u8, prev, ">")) {
 
                         // change prev from "=" to "=="
-                        std.debug.print("gotem \n", .{});
                         const hold = prev[0];
                         allocator.free(prev);
                         const newToken = try allocator.alloc(u8, 2);

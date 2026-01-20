@@ -38,4 +38,5 @@ pub const SPECIAL_TOKEN_MAP = std.StaticStringMap(SpecialToken).initComptime(.{
     .{ "}", .Rcurly },
     .{ ":", .Colon },
     .{ ";", .Semicolon },
+    .{ "//", .Comment },
 });

@@ -6,6 +6,7 @@ const Token = @import("types.zig").token;
 const Ast = @import("ast.zig");
 pub fn execute(path: []const u8, allocator: std.mem.Allocator) !void {
     const file_contents = try std.fs.cwd().readFileAlloc(allocator, path, 1024 * 1024 * 1024); // 1GB max size
+    defer allocator.free(file_contents);
     var lexer = Lexer.new(file_contents);
     var tokens = try lexer.tokenize(allocator);
     var parser = Parser.new(tokens.items, allocator);
@@ -29,7 +30,7 @@ pub fn execute(path: []const u8, allocator: std.mem.Allocator) !void {
 test "lex and parse" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    const input = "let x = 5;";
+    const input = "let x = 6x6;";
     var lexer = Lexer.new(input);
     var tokens = try lexer.tokenize(allocator);
     var parser = Parser.new(tokens.items, allocator);
@@ -54,4 +55,8 @@ test "lex and parse" {
         }
     }
     // try std.testing.expect(ast.len == 1);
+}
+
+test "exec" {
+    try execute("./bufr_code/matrices.bufr", std.testing.allocator);
 }
