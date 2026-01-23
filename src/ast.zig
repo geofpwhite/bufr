@@ -1,18 +1,25 @@
 const std = @import("std");
 
 const operator = @import("operators.zig").Operator;
-const array_operator = @import("operators.zig").ArrayOperator;
 const inequality = @import("operators.zig").Inequality;
 const token = @import("types.zig").token;
 const special_token = @import("special_tokens.zig").SpecialToken;
 const keyword = @import("keywords.zig").Keyword;
 const matrix = @import("types.zig").Matrix;
+const matrixType = @import("types.zig").MatrixType;
 
 pub const ast = struct {
     statements: ?std.ArrayList(astNode),
 
     pub fn deinit(self: *ast, allocator: std.mem.Allocator) void {
         self.statements.?.deinit(allocator);
+    }
+    pub fn print(self: *ast, allocator: std.mem.Allocator) !void {
+        if (self.statements) |statements| {
+            for (statements.items) |statement| {
+                try statement.print(allocator);
+            }
+        }
     }
 };
 
@@ -41,26 +48,42 @@ pub const astNode = struct {
     }
 };
 
+pub const matrixValue = struct {
+    rows: usize,
+    cols: usize,
+    elementType: ?matrixType,
+};
+
+pub fn matrixNode(rows: usize, cols: usize) !matrixValue {
+    return matrixValue{
+        .rows = rows,
+        .cols = cols,
+        .elementType = null,
+    };
+}
+
 pub const astValue = union(enum) {
     identifier: token,
-    digits: i64,
+    integer: i64,
+    float: f64,
+    boolean: bool,
     operator: operator,
     inequality: inequality,
-    array_operator: array_operator,
     special_token: special_token,
-    matrix: matrix,
+    matrix: matrixValue,
     keyword: keyword,
 
     pub fn toString(self: astValue, allocator: std.mem.Allocator) ![]u8 {
         switch (self) {
             .identifier => |id| return try std.fmt.allocPrint(allocator, "{s}", .{id}),
-            .digits => |num| return try std.fmt.allocPrint(allocator, "{d}", .{num}),
+            .integer => |num| return try std.fmt.allocPrint(allocator, "{d}", .{num}),
             .operator => |op| return try std.fmt.allocPrint(allocator, "{s}", .{op.toString()}),
             .inequality => |ineq| return try std.fmt.allocPrint(allocator, "{s}", .{ineq.toString()}),
-            .array_operator => |array_op| return try std.fmt.allocPrint(allocator, "{s}", .{array_op.toString()}),
+            .float => |f| return try std.fmt.allocPrint(allocator, "{any}", .{f}),
             .special_token => |special| return try std.fmt.allocPrint(allocator, "{s}", .{special.toString()}),
             .keyword => |kword| return try std.fmt.allocPrint(allocator, "{s}", .{kword.toString()}),
-            .matrix => |mat| return try std.fmt.allocPrint(allocator, "{s}", .{mat.toString()}),
+            .boolean => |b| return try std.fmt.allocPrint(allocator, "{any}", .{b}),
+            .matrix => |mat| return try std.fmt.allocPrint(allocator, "{any}", .{mat}),
         }
     }
 };

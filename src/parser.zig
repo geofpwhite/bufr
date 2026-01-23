@@ -56,7 +56,16 @@ pub const parser = struct {
         const id = expression;
 
         if (std.fmt.parseInt(i64, id, 10)) |n| {
-            newNode.*.value = .{ .digits = n };
+            newNode.*.value = .{ .integer = n };
+            if (self.input.len > index + 2 and self.input[index + 1][0] == '.' and self.input[index + 2][0] >= '0' and self.input[index + 2][0] <= '9') {
+                const float_string = std.mem.concat(self.allocator, u8, &.{ expression, ".", self.input[index + 2] }) catch {
+                    return parserError.AllocFailed;
+                };
+                defer self.allocator.free(float_string);
+                if (std.fmt.parseFloat(f64, float_string)) |f| {
+                    newNode.*.value = .{ .float = f };
+                } else |_| {}
+            }
         } else |_| {}
         if (cur.value) |v| {
             if (v == .keyword) {
@@ -68,32 +77,36 @@ pub const parser = struct {
                 }
             }
         }
+        var new_index = index;
+        if (newNode.value) |value| if (value == .float) {
+            new_index += 2;
+        };
         if (root) {
             if (cur.right) |right|
                 if (right.value) |val|
                     if (val == .operator) {
                         var newCur = cur;
                         newCur.right.?.right = newNode;
-                        return self.parse(root, newCur, index);
+                        return self.parse(root, newCur, new_index);
                     };
             var newCur = cur;
             newCur.right = newNode;
-            return self.parse(root, newCur, index);
+            return self.parse(root, newCur, new_index);
         } else {
             if (cur.value) |val| switch (val) {
                 .keyword => {
                     var newCur = cur;
                     newCur.right = newNode;
-                    return self.parse(root, newCur, index);
+                    return self.parse(root, newCur, new_index);
                 },
                 .operator => {
                     var newCur = cur;
                     newCur.right = newNode;
-                    return self.parse(root, newCur, index);
+                    return self.parse(root, newCur, new_index);
                 },
                 else => {},
             };
-            return self.parse(root, newNode.*, index);
+            return self.parse(root, newNode.*, new_index);
         }
     }
     fn parse_special_token(self: *parser, root: bool, cur: Ast.astNode, index: usize, sToken: special_token) parserError!ast {
@@ -198,12 +211,10 @@ pub const parser = struct {
             operator.Not, operator.BitNot => {
                 if (root) {
                     if (cur.right) |right| {
-                        if (right.value) |val| {
-                            if (val == .operator) {
-                                newCur.right.?.right = newNode;
-                                return self.parse(root, newCur, index);
-                            }
-                        }
+                        if (right.value) |val| if (val == .operator) {
+                            newCur.right.?.right = newNode;
+                            return self.parse(root, newCur, index);
+                        };
                     } else {
                         newCur.right = newNode;
                         return self.parse(root, newCur, index);
@@ -275,7 +286,7 @@ pub const parser = struct {
             };
         }
         newNode.* = Ast.astNode{
-            .value = .{ .matrix = Type.matrix(self.allocator, before_x, after_x) catch {
+            .value = .{ .matrix = Ast.matrixNode(before_x, after_x) catch {
                 return parserError.AllocFailed;
             } },
             .left = null,
@@ -328,7 +339,7 @@ pub const parser = struct {
         while (check_index < check.len and ('0' <= check[check_index] and check[check_index] <= '9')) {
             check_index += 1;
         }
-        if (check_index < check.len and check[check_index] == 'x') {
+        if (0 < check_index and check_index < check.len and check[check_index] == 'x') {
             return true;
         }
         return false;

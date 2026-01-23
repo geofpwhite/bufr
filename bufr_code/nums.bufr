@@ -1,0 +1,5 @@
+
+let y= 4;
+let x = 6;
+let z = x + y;
+let w = 2.1;

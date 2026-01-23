@@ -1,33 +1,42 @@
 const std = @import("std");
+
+const Ast = @import("ast.zig");
 const Lexer = @import("lexer.zig").lexer;
 const Parser = @import("parser.zig").parser;
 const State = @import("eval.zig").state;
 const Token = @import("types.zig").token;
-const Ast = @import("ast.zig");
+const Operator = @import("operators.zig").Operator;
+
 pub fn execute(path: []const u8, allocator: std.mem.Allocator) !void {
     const file_contents = try std.fs.cwd().readFileAlloc(allocator, path, 1024 * 1024 * 1024); // 1GB max size
     defer allocator.free(file_contents);
     var lexer = Lexer.new(file_contents);
     var tokens = try lexer.tokenize(allocator);
-    var parser = Parser.new(tokens.items, allocator);
+    const items = tokens.items;
+    var parser = Parser.new(items, allocator);
     var tree = try parser.Parse();
     var eval = State.new(tree, allocator);
     try eval.Eval();
+
     defer {
         // free each token slice
         for (tokens.items) |tok| {
             allocator.free(tok);
         }
-        tree.deinit(allocator);
-        for (parser.references.items) |ref| {
-            allocator.destroy(ref);
-        }
-        parser.references.deinit(allocator);
         tokens.deinit(allocator);
+        tree.deinit(allocator);
+        parser.deinit();
+        eval.deinit();
+    }
+    var iter = eval.vars.keyIterator();
+    while (iter.next()) |k| {
+        std.debug.print("{any} = {any}\n", .{ k, eval.vars.get(k.*).?.name });
     }
 }
 
 test "lex and parse" {
+    const eql = @intFromEnum(Operator.Add) > @intFromEnum(Operator.Subtract);
+    std.debug.print("Operator precedence: {any}\n", .{eql});
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     const input = "let x = 6x6;";
@@ -58,5 +67,5 @@ test "lex and parse" {
 }
 
 test "exec" {
-    try execute("./bufr_code/matrices.bufr", std.testing.allocator);
+    try execute("./bufr_code/nums.bufr", std.testing.allocator);
 }

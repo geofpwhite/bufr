@@ -39,18 +39,30 @@ pub const Operator = enum {
         };
     }
 };
-pub const ArrayOperator = enum {
-    Add,
-    Dot,
-    Mul,
-    pub fn toString(self: ArrayOperator) []const u8 {
-        return switch (self) {
-            .Add => "+",
-            .Dot => ".",
-            .Mul => "*",
-        };
-    }
-};
+
+pub const Associativity = enum { Left, Right };
+
+pub fn precedence(op: Operator) u8 {
+    return switch (op) {
+        .Assignment => 0,
+        .Add, .Subtract => 10,
+        .Multiply, .Divide, .Modulo => 20,
+        .Power => 30, // higher than * so it binds tighter
+        .BitLShift, .BitRShift => 15,
+        .BitAnd, .BitOr, .BitXor => 8,
+        .And => 5,
+        .Or => 5,
+        .Not, .BitNot => 40, // unary highest
+    };
+}
+
+pub fn associativity(op: Operator) Associativity {
+    return switch (op) {
+        .Power => .Right, // e.g. 2 ^ 3 ^ 2 -> 2 ^ (3 ^ 2)
+        .Assignment => .Right,
+        else => .Left,
+    };
+}
 
 pub const OPERATOR_MAP = std.StaticStringMap(Operator).initComptime(.{
     .{ "=", .Assignment },
