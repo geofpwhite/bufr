@@ -51,17 +51,25 @@ pub const lexer = struct {
 
             switch (self.ch) {
                 '/' => {
-                    const prev = (tokens.items[tokens.items.len - 1]);
-                    if (std.mem.eql(u8, slice, prev)) {
-                        allocator.free(prev);
-                        _ = tokens.pop();
-                        while (self.readPosition < self.input.len and self.input[self.readPosition] != '\n' and self.input[self.readPosition] != '\r') {
+                    std.debug.print("Slash found {d}\n", .{tokens.items.len});
+                    if (tokens.items.len > 0) {
+                        const prev = (tokens.items[tokens.items.len - 1]);
+                        if (std.mem.eql(u8, slice, prev)) {
+                            allocator.free(prev);
+                            _ = tokens.pop();
+                            while (self.readPosition < self.input.len and self.input[self.readPosition] != '\n' and self.input[self.readPosition] != '\r') {
+                                self.readPosition += 1;
+                            }
                             self.readPosition += 1;
+                            self.bufferPosition = 0;
+                        } else {
+                            try self.addCur(&tokens, allocator);
+                            self.buffer[0] = self.ch;
+                            self.bufferPosition = 1;
+                            try self.addCur(&tokens, allocator);
                         }
-                        self.readPosition += 1;
-                        self.bufferPosition = 0;
                     } else {
-                        try self.addCur(&tokens, allocator);
+                        // try self.addCur(&tokens, allocator);
                         self.buffer[0] = self.ch;
                         self.bufferPosition = 1;
                         try self.addCur(&tokens, allocator);

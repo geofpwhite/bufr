@@ -56,12 +56,14 @@ pub const parser = struct {
         const id = expression;
 
         if (std.fmt.parseInt(i64, id, 10)) |n| {
+            std.debug.print("integer parsed\n", .{});
             newNode.*.value = .{ .integer = n };
-            if (self.input.len > index + 2 and self.input[index + 1][0] == '.' and self.input[index + 2][0] >= '0' and self.input[index + 2][0] <= '9') {
-                const float_string = std.mem.concat(self.allocator, u8, &.{ expression, ".", self.input[index + 2] }) catch {
+            if (self.input.len > index + 1 and self.input[index][0] == '.' and self.input[index + 1][0] >= '0' and self.input[index + 1][0] <= '9') {
+                const float_string = std.mem.concat(self.allocator, u8, &.{ expression, ".", self.input[index + 1] }) catch {
                     return parserError.AllocFailed;
                 };
                 defer self.allocator.free(float_string);
+                std.debug.print("float\n\n", .{});
                 if (std.fmt.parseFloat(f64, float_string)) |f| {
                     newNode.*.value = .{ .float = f };
                 } else |_| {}
@@ -121,6 +123,7 @@ pub const parser = struct {
         self.references.append(self.allocator, newNode) catch {
             return parserError.AllocFailed;
         };
+        var newCur = cur;
         switch (sToken) {
             special_token.Colon => {},
             special_token.Lcurly => {},
@@ -129,7 +132,18 @@ pub const parser = struct {
             special_token.Rcurly => {},
             special_token.Rparen => {},
             special_token.Rsquare => {},
-            special_token.Dot => {},
+            special_token.Dot => {
+                if (root) {
+                    newNode.left = newCur.right;
+                    newCur.right = newNode;
+                    std.debug.print("Dot token root found {any}\n", .{newCur.right});
+                } else {
+                    newNode.left = &newCur;
+                    newCur = newNode.*;
+                    std.debug.print("Dot token found {any}\n", .{newCur});
+                }
+                return self.parse(root, newCur, index);
+            },
             special_token.Semicolon => {
                 if (self.statements.statements == null) {
                     self.statements.statements = std.ArrayList(Ast.astNode).empty;

@@ -30,7 +30,7 @@ pub fn execute(path: []const u8, allocator: std.mem.Allocator) !void {
     }
     var iter = eval.vars.keyIterator();
     while (iter.next()) |k| {
-        std.debug.print("{any} = {any}\n", .{ k, eval.vars.get(k.*).?.name });
+        std.debug.print("{any} = {any}\n", .{ k, eval.vars.get(k.*) });
     }
 }
 

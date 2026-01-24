@@ -108,13 +108,16 @@ pub const state = struct {
     }
 
     fn eval_assignment(self: *Self, node: Ast.astNode) !void {
+        std.debug.print("eval_assignment\n", .{});
         if (node.left) |left| if (left.value) |value| {
             switch (value) {
                 .identifier => |name| if (node.right) |right| {
                     if (self.vars.get(name)) |_| {
                         try self.eval(right.*);
                         if (self.cur_return) |cr| {
-                            try self.vars.put(name, cr);
+                            var namedVar = cr;
+                            namedVar.name = name;
+                            try self.vars.put(name, namedVar);
                         }
                     } else {
                         return evalError.UndefinedVariable;
@@ -126,7 +129,9 @@ pub const state = struct {
                         if (left.right) |left_right| {
                             std.debug.print("left.right = {any}\n", .{left_right});
                             std.debug.print("right = {any}\n", .{right});
-                            try self.vars.put(left_right.value.?.identifier, cr);
+                            var namedVar = cr;
+                            namedVar.name = left_right.value.?.identifier;
+                            try self.vars.put(left_right.value.?.identifier, namedVar);
                         } else {
                             if (self.vars.get("y")) |y| {
                                 std.debug.print("var: {any}\n", .{y});
@@ -211,10 +216,27 @@ pub const state = struct {
     }
 
     fn special_token(self: *Self, left: Variable, right: Variable, sp: SpecialToken) !void {
-        _ = self;
-        _ = left;
-        _ = right;
-        _ = sp;
+        switch (sp) {
+            .Dot => {
+                if (left.type == .Integer and right.type == left.type) {
+                    const l = left.data.integer;
+                    const r = right.data.integer;
+
+                    const float_string = std.fmt.allocPrint(self.allocator, "{}.{}", .{ l, r }) catch {
+                        return evalError.SyntaxError;
+                    };
+                    const float_val = std.fmt.parseFloat(f64, float_string) catch {
+                        return evalError.SyntaxError;
+                    };
+                    self.cur_return = Variable{
+                        .name = "",
+                        .type = .Float,
+                        .data = .{ .float = float_val },
+                    };
+                }
+            },
+            else => {},
+        }
         // try self.eval(left);
         // const left = self.cur_return.?;
 

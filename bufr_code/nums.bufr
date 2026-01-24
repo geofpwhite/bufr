@@ -1,5 +1,8 @@
+// let y= 4;
+//let x = 6;
+//let z = x + y;
+let z = 1 + 2 +3;
+let w = 2.1 + 4.56;
 
-let y= 4;
-let x = 6;
-let z = x + y;
-let w = 2.1;
+let mat= 5x6;
+//let z = 2;
