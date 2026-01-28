@@ -20,7 +20,7 @@ const evalError = error{
 
 pub const state = struct {
     ast: Ast.ast,
-    vars: std.StringHashMap(Variable),
+    vars: std.StringHashMap(*Variable),
     cur_return: ?Variable,
     allocator: std.mem.Allocator,
 
@@ -28,13 +28,18 @@ pub const state = struct {
     pub fn new(tree: Ast.ast, allocator: std.mem.Allocator) Self {
         return Self{
             .ast = tree,
-            .vars = std.StringHashMap(Variable).init(std.heap.page_allocator),
+            .vars = std.StringHashMap(*Variable).init(std.heap.page_allocator),
             .cur_return = null,
             .allocator = allocator,
         };
     }
 
     pub fn deinit(self: *Self) void {
+        var key_iter = self.vars.iterator();
+        while (key_iter.next()) |k| {
+            k.value_ptr.*.deinit(self.allocator);
+            self.allocator.destroy(k.value_ptr.*);
+        }
         self.vars.deinit();
     }
 
@@ -79,7 +84,7 @@ pub const state = struct {
 
     fn eval_identifier(self: *Self, id: []const u8) !void {
         if (self.vars.get(id)) |v| {
-            self.cur_return = v;
+            self.cur_return = v.*;
         } else {
             self.cur_return = null;
         }
@@ -112,12 +117,16 @@ pub const state = struct {
         if (node.left) |left| if (left.value) |value| {
             switch (value) {
                 .identifier => |name| if (node.right) |right| {
-                    if (self.vars.get(name)) |_| {
+                    if (self.vars.get(name)) |v| {
                         try self.eval(right.*);
                         if (self.cur_return) |cr| {
                             var namedVar = cr;
                             namedVar.name = name;
-                            try self.vars.put(name, namedVar);
+                            const va = self.allocator.create(Variable) catch return evalError.SyntaxError;
+                            v.deinit(self.allocator);
+                            self.allocator.destroy(v);
+                            va.* = namedVar;
+                            try self.vars.put(name, va);
                         }
                     } else {
                         return evalError.UndefinedVariable;
@@ -127,11 +136,14 @@ pub const state = struct {
                     try self.eval(right.*);
                     if (self.cur_return) |cr| {
                         if (left.right) |left_right| {
+                            // std.debug.print("left.right = {any}\n", .{left});
                             std.debug.print("left.right = {any}\n", .{left_right});
-                            std.debug.print("right = {any}\n", .{right});
+                            // std.debug.print("right = {any}\n", .{right});
                             var namedVar = cr;
                             namedVar.name = left_right.value.?.identifier;
-                            try self.vars.put(left_right.value.?.identifier, namedVar);
+                            const va = self.allocator.create(Variable) catch return evalError.SyntaxError;
+                            va.* = namedVar;
+                            try self.vars.put(left_right.value.?.identifier, va);
                         } else {
                             if (self.vars.get("y")) |y| {
                                 std.debug.print("var: {any}\n", .{y});
@@ -140,6 +152,8 @@ pub const state = struct {
                         }
                     }
                 } else {
+                    std.debug.print("type: {any}\n", .{kw});
+                    std.debug.print("right: {any}\n", .{node.right});
                     return evalError.SyntaxError;
                 },
                 else => {
@@ -173,6 +187,7 @@ pub const state = struct {
     }
 
     fn eval_matrix(self: *Self, mat: Ast.matrixValue) !void {
+        std.debug.print("{any}\n", .{mat});
         self.cur_return = Variable{
             .name = "",
             .type = Type.Matrix,
@@ -342,7 +357,7 @@ pub const state = struct {
                         self.cur_return = Variable{
                             .name = "",
                             .type = .Matrix,
-                            .data = .{ .matrix = try Matrix.add(self.allocator, left.data.matrix, right.data.matrix) },
+                            .data = .{ .matrix = try Matrix.add(left.data.matrix, right.data.matrix, self.allocator) },
                         };
                     },
                     else => return evalError.TypeMismatch,

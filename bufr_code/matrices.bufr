@@ -1,5 +1,2 @@
-
-// let mat= 4x5;
-// let mat2= 5x4;
-// let dot= mat.mat2;
-// let mul= mat*mat2;
+let m = 4x5;
+let y = 2;

@@ -40,4 +40,11 @@ pub const variable = struct {
             },
         };
     }
+
+    pub fn deinit(self: *variable, allocator: std.mem.Allocator) void {
+        switch (self.data) {
+            .matrix => |matrix| matrix.deinit(allocator),
+            else => {},
+        }
+    }
 };

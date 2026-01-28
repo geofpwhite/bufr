@@ -58,7 +58,7 @@ pub fn matrixNode(rows: usize, cols: usize) !matrixValue {
     return matrixValue{
         .rows = rows,
         .cols = cols,
-        .elementType = null,
+        .elementType = matrixType.Float,
     };
 }
 

@@ -31,13 +31,11 @@ pub const Matrix = struct {
         if (self.rows != other.rows or self.cols != other.cols or self.type != other.type) {
             return false;
         }
-        for (0..self.rows) |row| {
-            for (0..self.cols) |col| {
-                if (self.data[row][col] != other.data[row][col]) {
+        for (0..self.rows) |row|
+            for (0..self.cols) |col|
+                if (self.data[row][col] != other.data[row][col])
                     return false;
-                }
-            }
-        }
+
         return true;
     }
 
@@ -59,7 +57,7 @@ pub const Matrix = struct {
         };
     }
 
-    pub fn add(allocator: std.mem.Allocator, left: Matrix, right: Matrix) !Matrix {
+    pub fn add(left: Matrix, right: Matrix, allocator: std.mem.Allocator) !Matrix {
         if (left.rows != right.rows or left.cols != right.cols or left.type != right.type) {
             return matrixEvalError.InvalidDimensions;
         }
@@ -80,6 +78,13 @@ pub const Matrix = struct {
         }
 
         return result;
+    }
+
+    pub fn deinit(self: Matrix, allocator: std.mem.Allocator) void {
+        for (self.data) |row| {
+            allocator.free(row);
+        }
+        allocator.free(self.data);
     }
 
     pub fn toString(_: Matrix) []const u8 {

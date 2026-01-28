@@ -40,7 +40,7 @@ pub const parser = struct {
         }
         self.references.deinit(self.allocator);
     }
-    fn parse_expression(self: *parser, root: bool, cur: Ast.astNode, index: usize, expression: token) parserError!ast {
+    fn parse_expression(self: *parser, root: bool, cur: *Ast.astNode, index: usize, expression: token) parserError!ast {
         const newNode = self.allocator.create(Ast.astNode) catch {
             return parserError.AllocFailed;
         };
@@ -73,9 +73,8 @@ pub const parser = struct {
             if (v == .keyword) {
                 const kw = v.keyword;
                 if (kw == .Let) {
-                    var newCur = cur;
-                    newCur.right = newNode;
-                    return self.parse(root, newCur, index);
+                    cur.right = newNode;
+                    return self.parse(root, cur, index);
                 }
             }
         }
@@ -87,31 +86,27 @@ pub const parser = struct {
             if (cur.right) |right|
                 if (right.value) |val|
                     if (val == .operator) {
-                        var newCur = cur;
-                        newCur.right.?.right = newNode;
-                        return self.parse(root, newCur, new_index);
+                        cur.right.?.right = newNode;
+                        return self.parse(root, cur, new_index);
                     };
-            var newCur = cur;
-            newCur.right = newNode;
-            return self.parse(root, newCur, new_index);
+            cur.right = newNode;
+            return self.parse(root, cur, new_index);
         } else {
             if (cur.value) |val| switch (val) {
                 .keyword => {
-                    var newCur = cur;
-                    newCur.right = newNode;
-                    return self.parse(root, newCur, new_index);
+                    cur.right = newNode;
+                    return self.parse(root, cur, new_index);
                 },
                 .operator => {
-                    var newCur = cur;
-                    newCur.right = newNode;
-                    return self.parse(root, newCur, new_index);
+                    cur.right = newNode;
+                    return self.parse(root, cur, new_index);
                 },
                 else => {},
             };
-            return self.parse(root, newNode.*, new_index);
+            return self.parse(root, newNode, new_index);
         }
     }
-    fn parse_special_token(self: *parser, root: bool, cur: Ast.astNode, index: usize, sToken: special_token) parserError!ast {
+    fn parse_special_token(self: *parser, root: bool, cur: *Ast.astNode, index: usize, sToken: special_token) parserError!ast {
         const newNode = self.allocator.create(Ast.astNode) catch {
             return parserError.AllocFailed;
         };
@@ -123,7 +118,6 @@ pub const parser = struct {
         self.references.append(self.allocator, newNode) catch {
             return parserError.AllocFailed;
         };
-        var newCur = cur;
         switch (sToken) {
             special_token.Colon => {},
             special_token.Lcurly => {},
@@ -134,15 +128,15 @@ pub const parser = struct {
             special_token.Rsquare => {},
             special_token.Dot => {
                 if (root) {
-                    newNode.left = newCur.right;
-                    newCur.right = newNode;
-                    std.debug.print("Dot token root found {any}\n", .{newCur.right});
+                    newNode.left = cur.right;
+                    cur.right = newNode;
+                    std.debug.print("Dot token root found {any}\n", .{cur.right});
                 } else {
-                    newNode.left = &newCur;
-                    newCur = newNode.*;
-                    std.debug.print("Dot token found {any}\n", .{newCur});
+                    newNode.left = cur;
+                    cur.* = newNode.*;
+                    std.debug.print("Dot token found {any}\n", .{cur});
                 }
-                return self.parse(root, newCur, index);
+                return self.parse(root, cur, index);
             },
             special_token.Semicolon => {
                 if (self.statements.statements == null) {
@@ -151,24 +145,26 @@ pub const parser = struct {
                 self.allocNewStatement(cur) catch {
                     return parserError.AllocFailed;
                 };
-                return self.parse(false, Ast.astNode{ .left = null, .right = null, .value = null }, index);
+                var new_statement = Ast.astNode{ .left = null, .right = null, .value = null };
+                return self.parse(false, &new_statement, index);
             },
             special_token.Comment => {},
         }
-        return self.parse(root, newNode.*, index);
+        return self.parse(root, newNode, index);
     }
 
-    fn allocNewStatement(self: *parser, cur: Ast.astNode) !void {
+    fn allocNewStatement(self: *parser, cur: *Ast.astNode) !void {
         if (self.statements.statements == null) {
             self.statements = .{ .statements = std.ArrayList(Ast.astNode).empty };
         }
-        try self.statements.statements.?.append(self.allocator, cur);
+        try self.statements.statements.?.append(self.allocator, cur.*);
     }
 
-    fn parse_keyword(self: *parser, root: bool, cur: Ast.astNode, index: usize, kw: keyword) parserError!ast {
+    fn parse_keyword(self: *parser, root: bool, cur: *Ast.astNode, index: usize, kw: keyword) parserError!ast {
         if (root) {
             return parserError.RootKeyword;
         }
+        std.debug.print("keyword scanned {any}\n", .{kw});
         const newNode = self.allocator.create(Ast.astNode) catch {
             return parserError.AllocFailed;
         };
@@ -190,21 +186,18 @@ pub const parser = struct {
             keyword.Continue => {},
             keyword.Fn => {},
             keyword.Let => {
-                return self.parse(root, newNode.*, index);
+                return self.parse(root, newNode, index);
             },
         }
         if (root) {
-            var newCur = cur;
-
-            newCur.right = newNode;
-
-            return self.parse(root, newCur, index);
+            cur.right = newNode;
+            return self.parse(root, cur, index);
         } else {
-            return self.parse(true, newNode.*, index);
+            return self.parse(true, newNode, index);
         }
     }
 
-    fn parse_operator(self: *parser, root: bool, cur: Ast.astNode, index: usize, op: operator) parserError!ast {
+    fn parse_operator(self: *parser, root: bool, cur: *Ast.astNode, index: usize, op: operator) parserError!ast {
         var newNode = self.allocator.create(Ast.astNode) catch {
             return parserError.AllocFailed;
         };
@@ -216,48 +209,47 @@ pub const parser = struct {
         self.references.append(self.allocator, newNode) catch {
             return parserError.AllocFailed;
         };
-        var newCur = cur;
         switch (op) {
             operator.Assignment => {
-                newNode.left = &newCur;
-                return self.parse(true, newNode.*, index);
+                newNode.left = cur;
+                return self.parse(true, newNode, index);
             },
             operator.Not, operator.BitNot => {
                 if (root) {
                     if (cur.right) |right| {
                         if (right.value) |val| if (val == .operator) {
-                            newCur.right.?.right = newNode;
-                            return self.parse(root, newCur, index);
+                            cur.right.?.right = newNode;
+                            return self.parse(root, cur, index);
                         };
                     } else {
-                        newCur.right = newNode;
-                        return self.parse(root, newCur, index);
+                        cur.right = newNode;
+                        return self.parse(root, cur, index);
                     }
                 } else {
                     if (cur.value) |val| {
                         if (val == .operator) {
-                            newCur.right = newNode;
-                            return self.parse(root, newCur, index);
+                            cur.right = newNode;
+                            return self.parse(root, cur, index);
                         }
                     }
-                    newNode.left = &newCur;
-                    return self.parse(root, newNode.*, index);
+                    newNode.left = cur;
+                    return self.parse(root, newNode, index);
                 }
             },
             else => {
                 if (root) {
-                    newNode.left = newCur.right;
-                    newCur.right = newNode;
+                    newNode.left = cur.right;
+                    cur.right = newNode;
                 } else {
-                    newNode.left = &newCur;
-                    newCur = newNode.*;
+                    newNode.left = cur;
+                    cur.* = newNode.*;
                 }
-                return self.parse(root, newCur, index);
+                return self.parse(root, cur, index);
             },
         }
-        return self.parse(root, newCur, index);
+        return self.parse(root, cur, index);
     }
-    fn parse_inequality(self: *parser, root: bool, cur: Ast.astNode, index: usize, ineq: inequality) parserError!ast {
+    fn parse_inequality(self: *parser, root: bool, cur: *Ast.astNode, index: usize, ineq: inequality) parserError!ast {
         var newNode = self.allocator.create(Ast.astNode) catch {
             return parserError.AllocFailed;
         };
@@ -270,22 +262,21 @@ pub const parser = struct {
             return parserError.AllocFailed;
         };
 
-        var newCur = cur;
         if (root) {
-            newNode.left.? = newCur.right.?;
-            newCur.right.? = newNode;
+            newNode.left = cur.right;
+            cur.right = newNode;
         } else {
-            newNode.left.?.* = newCur;
-            newCur = newNode.*;
+            newNode.left = cur;
+            cur.* = newNode.*;
         }
-        return self.parse(root, newCur, index);
+        return self.parse(root, cur, index);
     }
-    pub fn parse_matrix(self: *parser, root: bool, cur: Ast.astNode, index: usize) parserError!ast {
-        const cur_token = self.input[index];
+    pub fn parse_matrix(self: *parser, root: bool, cur: *Ast.astNode, index: usize, cur_token: []const u8) parserError!ast {
         const newNode = self.allocator.create(Ast.astNode) catch {
             return parserError.AllocFailed;
         };
         const index_x = std.mem.indexOf(u8, cur_token, "x");
+        std.debug.print("Index of 'x' in {s}: {any}\n", .{ cur_token, index_x });
         self.references.append(self.allocator, newNode) catch {
             return parserError.AllocFailed;
         };
@@ -298,23 +289,31 @@ pub const parser = struct {
             after_x = std.fmt.parseInt(usize, cur_token[x_index + 1 ..], 10) catch {
                 return parserError.AllocFailed;
             };
+            newNode.* = Ast.astNode{
+                .value = .{ .matrix = Ast.matrixNode(before_x, after_x) catch {
+                    return parserError.AllocFailed;
+                } },
+                .left = null,
+                .right = null,
+            };
+            if (root) {
+                if (cur.right) |right| newNode.left = right;
+                cur.right = newNode;
+            } else {
+                newNode.left = cur;
+                cur.* = newNode.*;
+            }
+            return self.parse(root, cur, index);
+        } else {
+            return parserError.InvalidToken;
         }
-        newNode.* = Ast.astNode{
-            .value = .{ .matrix = Ast.matrixNode(before_x, after_x) catch {
-                return parserError.AllocFailed;
-            } },
-            .left = null,
-            .right = null,
-        };
-        var newCur = cur;
-        newCur = cur;
-        return self.parse(root, newCur, index);
     }
 
     pub fn Parse(self: *parser) parserError!ast {
-        return self.parse(false, Ast.astNode{ .left = null, .right = null, .value = null }, 0);
+        var start = Ast.astNode{ .left = null, .right = null, .value = null };
+        return self.parse(false, &start, 0);
     }
-    fn parse(self: *parser, root: bool, cur: Ast.astNode, index: usize) parserError!ast {
+    fn parse(self: *parser, root: bool, cur: *Ast.astNode, index: usize) parserError!ast {
         if (index >= self.input.len) {
             return self.statements;
         }
@@ -340,16 +339,16 @@ pub const parser = struct {
         if (special) |spec| {
             return self.parse_special_token(root, cur, new_index, spec);
         }
-        if (try self.scan_for_matrix_init(index)) {
-            return self.parse_matrix(root, cur, new_index);
+        if (try self.scan_for_matrix_init(cur_token)) {
+            std.debug.print("matrix init scanned\n", .{});
+            return self.parse_matrix(root, cur, new_index, cur_token);
         }
 
         return self.parse_expression(root, cur, new_index, cur_token);
     }
 
-    fn scan_for_matrix_init(self: *parser, index: usize) parserError!bool {
+    fn scan_for_matrix_init(_: *parser, check: []const u8) parserError!bool {
         var check_index: usize = 0;
-        const check = self.input[index];
         while (check_index < check.len and ('0' <= check[check_index] and check[check_index] <= '9')) {
             check_index += 1;
         }

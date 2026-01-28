@@ -4,5 +4,4 @@
 let z = 1 + 2 +3;
 let w = 2.1 + 4.56;
 
-let mat= 5x6;
-//let z = 2;
+z = 2;
