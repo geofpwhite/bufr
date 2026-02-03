@@ -96,6 +96,7 @@ pub const state = struct {
                 try self.eval_assignment(node);
             },
             else => {
+                // operators should have a valid left and right node
                 if (node.left) |left| if (node.right) |right| {
                     try self.eval(left.*);
                     const leftValue = self.cur_return;
@@ -364,8 +365,60 @@ pub const state = struct {
                 }
             },
 
-            // .Subtract => "-",
-            // .Multiply => "*",
+            .Subtract => switch (left.type) {
+                .Float => |l_float| {
+                    const r_float = right.data.float;
+                    self.cur_return = Variable{
+                        .name = "",
+                        .type = .Float,
+                        .data = .{ .float = l_float - r_float },
+                    };
+                },
+                .Integer => |l_int| {
+                    const r_int = right.data.integer;
+                    self.cur_return = Variable{
+                        .name = "",
+                        .type = .Integer,
+                        .data = .{ .integer = l_int - r_int },
+                    };
+                },
+                .Matrix => |l_matrix| {
+                    const r_matrix = right.data.matrix;
+                    self.cur_return = Variable{
+                        .name = "",
+                        .type = .Matrix,
+                        .data = .{ .matrix = try Matrix.subtract(l_matrix, r_matrix, self.allocator) },
+                    };
+                },
+                else => return evalError.TypeMismatch,
+            },
+            .Multiply => switch (left.type) {
+                .Float => |l_float| {
+                    const r_float = right.data.float;
+                    self.cur_return = Variable{
+                        .name = "",
+                        .type = .Float,
+                        .data = .{ .float = l_float * r_float },
+                    };
+                },
+                .Integer => |l_int| {
+                    const r_int = right.data.integer;
+                    self.cur_return = Variable{
+                        .name = "",
+                        .type = .Integer,
+                        .data = .{ .integer = l_int * r_int },
+                    };
+                },
+                .Matrix => |l_matrix| {
+                    const r_matrix = right.data.matrix;
+                    self.cur_return = Variable{
+                        .name = "",
+                        .type = .Matrix,
+                        .data = .{ .matrix = try Matrix.multiply(l_matrix, r_matrix, self.allocator) },
+                    };
+                },
+                else => return evalError.TypeMismatch,
+            },
             // .Divide => "/",
             // .Modulo => "%",
             // .Power => "^",
