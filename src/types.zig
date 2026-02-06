@@ -80,6 +80,28 @@ pub const Matrix = struct {
         return result;
     }
 
+    pub fn subtract(left: Matrix, right: Matrix, allocator: std.mem.Allocator) !Matrix {
+        if (left.rows != right.rows or left.cols != right.cols or left.type != right.type) {
+            return matrixEvalError.InvalidDimensions;
+        }
+        var result = try Matrix.new(allocator, left.rows, left.cols, left.type);
+        // const t: type = if (left.type == .Float) f64 else i64;
+        for (0..left.rows) |row| {
+            for (0..left.cols) |col| {
+                if (left.type == .Float) {
+                    const f1: f64 = @bitCast(left.data[row][col]);
+                    const f2: f64 = @bitCast(right.data[row][col]);
+                    result.data[row][col] = @bitCast(f1 - f2);
+                    continue;
+                }
+                const f1: i64 = @bitCast(left.data[row][col]);
+                const f2: i64 = @bitCast(right.data[row][col]);
+                result.data[row][col] = @bitCast(f1 - f2);
+            }
+        }
+        return result;
+    }
+
     pub fn deinit(self: Matrix, allocator: std.mem.Allocator) void {
         for (self.data) |row| {
             allocator.free(row);

@@ -345,7 +345,7 @@ pub const state = struct {
                             .data = .{ .integer = l_int + r_int },
                         };
                     },
-                    .Float => |_| {
+                    .Float => {
                         const l_float = left.data.float;
                         const r_float = right.data.float;
                         self.cur_return = Variable{
@@ -366,24 +366,27 @@ pub const state = struct {
             },
 
             .Subtract => switch (left.type) {
-                .Float => |l_float| {
+                .Float => {
                     const r_float = right.data.float;
+                    const l_float = left.data.float;
                     self.cur_return = Variable{
                         .name = "",
                         .type = .Float,
                         .data = .{ .float = l_float - r_float },
                     };
                 },
-                .Integer => |l_int| {
+                .Integer => {
                     const r_int = right.data.integer;
+                    const l_int = left.data.integer;
                     self.cur_return = Variable{
                         .name = "",
                         .type = .Integer,
                         .data = .{ .integer = l_int - r_int },
                     };
                 },
-                .Matrix => |l_matrix| {
+                .Matrix => {
                     const r_matrix = right.data.matrix;
+                    const l_matrix = left.data.matrix;
                     self.cur_return = Variable{
                         .name = "",
                         .type = .Matrix,
@@ -393,24 +396,27 @@ pub const state = struct {
                 else => return evalError.TypeMismatch,
             },
             .Multiply => switch (left.type) {
-                .Float => |l_float| {
+                .Float => {
                     const r_float = right.data.float;
+                    const l_float = left.data.float;
                     self.cur_return = Variable{
                         .name = "",
                         .type = .Float,
                         .data = .{ .float = l_float * r_float },
                     };
                 },
-                .Integer => |l_int| {
+                .Integer => {
                     const r_int = right.data.integer;
+                    const l_int = left.data.integer;
                     self.cur_return = Variable{
                         .name = "",
                         .type = .Integer,
                         .data = .{ .integer = l_int * r_int },
                     };
                 },
-                .Matrix => |l_matrix| {
+                .Matrix => {
                     const r_matrix = right.data.matrix;
+                    const l_matrix = left.data.matrix;
                     self.cur_return = Variable{
                         .name = "",
                         .type = .Matrix,
