@@ -102,6 +102,31 @@ pub const Matrix = struct {
         return result;
     }
 
+    pub fn multiply(left: Matrix, right: Matrix, allocator: std.mem.Allocator) !Matrix {
+        if (left.cols != right.rows) {
+            return matrixEvalError.InvalidDimensions;
+        }
+        var result = try Matrix.new(allocator, left.rows, right.cols, left.type);
+        for (0..left.rows) |row| {
+            for (0..right.cols) |col| {
+                var sum: i64 = 0;
+                for (0..left.cols) |k| {
+                    if (left.type == .Float) {
+                        const f1: f64 = @bitCast(left.data[row][k]);
+                        const f2: f64 = @bitCast(right.data[k][col]);
+                        sum += @bitCast(f1 * f2);
+                    } else {
+                        const f1: i64 = @bitCast(left.data[row][k]);
+                        const f2: i64 = @bitCast(right.data[k][col]);
+                        sum += @bitCast(f1 * f2);
+                    }
+                }
+                result.data[row][col] = @bitCast(sum);
+            }
+        }
+        return result;
+    }
+
     pub fn deinit(self: Matrix, allocator: std.mem.Allocator) void {
         for (self.data) |row| {
             allocator.free(row);

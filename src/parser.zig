@@ -321,12 +321,11 @@ pub const parser = struct {
         std.debug.print("Current Node: {any}\n", .{cur});
         const cur_token = self.input[index];
         const new_index = index + 1;
-        const kword = KEYWORD_MAP.get(cur_token);
-        if (kword) |kw| {
+        if (KEYWORD_MAP.get(cur_token)) |kw| {
             return self.parse_keyword(root, cur, new_index, kw);
         }
-        const op = OPERATOR_MAP.get(cur_token);
-        if (op) |opp| {
+
+        if (OPERATOR_MAP.get(cur_token)) |opp| {
             std.debug.print("Operator: {any}\n", .{opp});
             return self.parse_operator(root, cur, new_index, opp);
         }
