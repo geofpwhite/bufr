@@ -296,6 +296,12 @@ pub const parser = struct {
                 .left = null,
                 .right = null,
             };
+            var next_index = index;
+            if (self.input[index].len == 1 and self.input[index][0] == '{') {
+                while (next_index < self.input.len and self.input[next_index][0] != '}') {
+                    next_index += 1;
+                }
+            }
             if (root) {
                 if (cur.right) |right| newNode.left = right;
                 cur.right = newNode;
@@ -303,7 +309,8 @@ pub const parser = struct {
                 newNode.left = cur;
                 cur.* = newNode.*;
             }
-            return self.parse(root, cur, index);
+            std.debug.print("index when parsing matrix node: {s}", .{self.input[next_index]});
+            return self.parse(root, cur, next_index);
         } else {
             return parserError.InvalidToken;
         }

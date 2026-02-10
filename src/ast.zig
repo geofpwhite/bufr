@@ -48,17 +48,14 @@ pub const astNode = struct {
     }
 };
 
-pub const matrixValue = struct {
-    rows: usize,
-    cols: usize,
-    elementType: ?matrixType,
-};
+pub const matrixValue = struct { rows: usize, cols: usize, elementType: ?matrixType, values: ?[]token };
 
 pub fn matrixNode(rows: usize, cols: usize) !matrixValue {
     return matrixValue{
         .rows = rows,
         .cols = cols,
         .elementType = matrixType.Float,
+        .values = null, // parser needs to scan and populate values
     };
 }
 
