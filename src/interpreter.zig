@@ -50,8 +50,8 @@ test "lex and parse" {
             allocator.free(tok);
         }
         tokens.deinit(allocator);
-        ast.deinit(allocator);
         parser.deinit();
+        ast.deinit(allocator);
         _ = gpa.deinit();
     }
     if (ast.statements) |stmts| {

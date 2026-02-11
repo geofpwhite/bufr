@@ -9,9 +9,12 @@ const matrix = @import("types.zig").Matrix;
 const matrixType = @import("types.zig").MatrixType;
 
 pub const ast = struct {
-    statements: ?std.ArrayList(astNode),
+    statements: ?std.ArrayList(Node),
 
     pub fn deinit(self: *ast, allocator: std.mem.Allocator) void {
+        // for (self.statements.?.items) |*statement| {
+        //     statement.deinit(allocator);
+        // }
         self.statements.?.deinit(allocator);
     }
     pub fn print(self: *ast, allocator: std.mem.Allocator) !void {
@@ -23,11 +26,11 @@ pub const ast = struct {
     }
 };
 
-pub const astNode = struct {
-    left: ?*astNode,
-    right: ?*astNode,
+pub const Node = struct {
+    left: ?*Node,
+    right: ?*Node,
     value: ?astValue,
-    pub fn print(node: *astNode, allocator: std.mem.Allocator) !void {
+    pub fn print(node: *Node, allocator: std.mem.Allocator) !void {
         if (node.value) |value| {
             const str = try value.toString(allocator);
             std.debug.print("Node: {s}\n", .{str});
@@ -43,6 +46,19 @@ pub const astNode = struct {
                 try right.print(allocator);
             } else {
                 std.debug.print("Right: {any}\n", .{node.right});
+            }
+        }
+    }
+    pub fn deinit(self: *Node, allocator: std.mem.Allocator) void {
+        if (self.value) |value| {
+            switch (value) {
+                .matrix => |m| if (m.values) |values| {
+                    for (values) |v| {
+                        allocator.free(v);
+                    }
+                    allocator.free(values);
+                },
+                else => {},
             }
         }
     }

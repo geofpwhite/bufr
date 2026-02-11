@@ -49,7 +49,7 @@ pub const state = struct {
         };
     }
 
-    pub fn eval(self: *Self, node: Ast.astNode) evalError!void {
+    pub fn eval(self: *Self, node: Ast.Node) evalError!void {
         if (node.value) |v| switch (v) {
             .identifier => |id| {
                 try self.eval_identifier(id);
@@ -90,7 +90,7 @@ pub const state = struct {
         }
     }
 
-    fn eval_operator(self: *Self, node: Ast.astNode, op: Operator) !void {
+    fn eval_operator(self: *Self, node: Ast.Node, op: Operator) !void {
         switch (op) {
             .Assignment => {
                 try self.eval_assignment(node);
@@ -113,7 +113,7 @@ pub const state = struct {
         }
     }
 
-    fn eval_assignment(self: *Self, node: Ast.astNode) !void {
+    fn eval_assignment(self: *Self, node: Ast.Node) !void {
         std.debug.print("eval_assignment\n", .{});
         if (node.left) |left| if (left.value) |value| {
             switch (value) {
@@ -164,7 +164,7 @@ pub const state = struct {
         } else return evalError.SyntaxError;
     }
 
-    fn eval_inequality(self: *Self, node: Ast.astNode, ineq: Inequality) !void {
+    fn eval_inequality(self: *Self, node: Ast.Node, ineq: Inequality) !void {
         if (node.left) |l| if (node.right) |r| {
             try self.eval(l.*);
             const left = self.cur_return.?;
@@ -174,7 +174,7 @@ pub const state = struct {
         } else return evalError.SyntaxError;
     }
 
-    fn eval_special_token(self: *Self, node: Ast.astNode, sp: SpecialToken) !void {
+    fn eval_special_token(self: *Self, node: Ast.Node, sp: SpecialToken) !void {
         if (node.left) |l| if (node.right) |r| {
             try self.eval(l.*);
             const left = self.cur_return.?;
@@ -214,7 +214,7 @@ pub const state = struct {
         };
     }
 
-    fn eval_keyword(self: *Self, node: Ast.astNode, kw: Keyword) !void {
+    fn eval_keyword(self: *Self, node: Ast.Node, kw: Keyword) !void {
         _ = self;
         _ = node;
         switch (kw) {
