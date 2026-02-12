@@ -197,7 +197,7 @@ pub const state = struct {
                     self.allocator,
                     mat.rows,
                     mat.cols,
-                    if (mat.elementType) |t| t else MatrixType.Float,
+                    mat.values,
                 ) catch {
                     return evalError.SyntaxError;
                 },

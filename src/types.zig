@@ -39,7 +39,7 @@ pub const Matrix = struct {
         return true;
     }
 
-    pub fn new(allocator: std.mem.Allocator, rows: usize, cols: usize, elementType: MatrixType, values: ?[][]const u8) !Matrix {
+    pub fn new(allocator: std.mem.Allocator, rows: usize, cols: usize, values: ?[][]const u8) !Matrix {
         var full_data = std.ArrayList([]u64).empty;
         var data = std.ArrayList(u64).empty;
         for (0..rows) |_| {
