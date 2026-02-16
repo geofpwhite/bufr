@@ -39,7 +39,24 @@ pub const Matrix = struct {
         return true;
     }
 
+    pub fn from(allocator: std.mem.Allocator, other: Matrix) !Matrix {
+        const clone = Matrix{
+            .type = other.type,
+            .rows = other.rows,
+            .cols = other.cols,
+            .data = try allocator.alloc([]u64, other.rows),
+        };
+        for (0..clone.rows) |row| {
+            clone.data[row] = try allocator.alloc(u64, clone.cols);
+            for (0..clone.cols) |col| {
+                clone.data[row][col] = other.data[row][col];
+            }
+        }
+        return clone;
+    }
+
     pub fn new(allocator: std.mem.Allocator, rows: usize, cols: usize, values: ?[][]const u8) !Matrix {
+        std.debug.print("matrix new called\n",.{});
         var full_data = std.ArrayList([]u64).empty;
         var data = std.ArrayList(u64).empty;
         for (0..rows) |_| {
@@ -49,11 +66,20 @@ pub const Matrix = struct {
             try full_data.append(allocator, try data.toOwnedSlice(allocator));
             data = std.ArrayList(u64).empty;
         }
+        //TODO: scan values & determine type
+        if (values) |vs| {
+            // const total_nums = rows * cols;
+
+            for (vs) |value| {
+                std.debug.print("Value: {s}\n", .{value});
+            }
+        }
+        const t = MatrixType.Integer;
         return Matrix{
-            .type = elementType,
             .rows = rows,
             .cols = cols,
             .data = try full_data.toOwnedSlice(allocator),
+            .type = t,
         };
     }
 
@@ -61,7 +87,7 @@ pub const Matrix = struct {
         if (left.rows != right.rows or left.cols != right.cols or left.type != right.type) {
             return matrixEvalError.InvalidDimensions;
         }
-        var result = try Matrix.new(allocator, left.rows, left.cols, left.type);
+        var result = try Matrix.from(allocator, left);
         // const t: type = if (left.type == .Float) f64 else i64;
         for (0..left.rows) |row| {
             for (0..left.cols) |col| {
@@ -84,7 +110,7 @@ pub const Matrix = struct {
         if (left.rows != right.rows or left.cols != right.cols or left.type != right.type) {
             return matrixEvalError.InvalidDimensions;
         }
-        var result = try Matrix.new(allocator, left.rows, left.cols, left.type);
+        var result = try Matrix.from(allocator,left);
         // const t: type = if (left.type == .Float) f64 else i64;
         for (0..left.rows) |row| {
             for (0..left.cols) |col| {
@@ -106,7 +132,7 @@ pub const Matrix = struct {
         if (left.cols != right.rows) {
             return matrixEvalError.InvalidDimensions;
         }
-        var result = try Matrix.new(allocator, left.rows, right.cols, left.type);
+        var result = try Matrix.from(allocator,left);
         for (0..left.rows) |row| {
             for (0..right.cols) |col| {
                 var sum: i64 = 0;

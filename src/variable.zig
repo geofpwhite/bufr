@@ -33,7 +33,7 @@ pub const variable = struct {
                         allocator,
                         value.rows,
                         value.cols,
-                        if (value.elementType) |typ| typ else MatrixType.Float,
+                        value.values,
                     ),
                 },
                 else => return VarError.InvalidType,

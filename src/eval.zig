@@ -188,7 +188,7 @@ pub const state = struct {
     }
 
     fn eval_matrix(self: *Self, mat: Ast.matrixValue) !void {
-        std.debug.print("{any}\n", .{mat});
+        std.debug.print("matrix {any}\n", .{mat});
         self.cur_return = Variable{
             .name = "",
             .type = Type.Matrix,
