@@ -50,6 +50,9 @@ pub const state = struct {
     }
 
     pub fn eval(self: *Self, node: Ast.Node) evalError!void {
+        if (node.value) |v| {
+            std.debug.print("eval node {}\n", .{v});
+        }
         if (node.value) |v| switch (v) {
             .identifier => |id| {
                 try self.eval_identifier(id);
@@ -69,7 +72,10 @@ pub const state = struct {
             },
             .inequality => |ineq| try self.eval_inequality(node, ineq),
             .special_token => |sp| try self.eval_special_token(node, sp),
-            .matrix => |mat| try self.eval_matrix(mat),
+            .matrix => |mat| {
+                std.debug.print("eval matrix\n", .{});
+                try self.eval_matrix(mat);
+            },
             .keyword => |kw| try self.eval_keyword(node, kw),
             .boolean => |b| try self.eval_boolean(b),
         };
@@ -188,7 +194,7 @@ pub const state = struct {
     }
 
     fn eval_matrix(self: *Self, mat: Ast.matrixValue) !void {
-        std.debug.print("matrix {any}\n", .{mat});
+        std.debug.print("eval matrix {any}\n", .{mat});
         self.cur_return = Variable{
             .name = "",
             .type = Type.Matrix,

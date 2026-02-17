@@ -322,7 +322,7 @@ pub const parser = struct {
                 cur.* = newNode.*;
             }
             std.debug.print("index when parsing matrix node: {s}", .{self.input[next_index]});
-            return self.parse(root, cur, next_index);
+            return self.parse(root, cur, next_index + 1);
         } else {
             return parserError.InvalidToken;
         }

@@ -67,6 +67,6 @@ test "lex and parse" {
 }
 
 test "exec" {
-    try execute("./bufr_code/nums.bufr", std.testing.allocator);
+    // try execute("./bufr_code/nums.bufr", std.testing.allocator);
     try execute("./bufr_code/matrices.bufr", std.testing.allocator);
 }

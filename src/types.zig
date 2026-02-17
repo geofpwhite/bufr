@@ -56,7 +56,7 @@ pub const Matrix = struct {
     }
 
     pub fn new(allocator: std.mem.Allocator, rows: usize, cols: usize, values: ?[][]const u8) !Matrix {
-        std.debug.print("matrix new called\n",.{});
+        std.debug.print("matrix new called\n", .{});
         var full_data = std.ArrayList([]u64).empty;
         var data = std.ArrayList(u64).empty;
         for (0..rows) |_| {
@@ -110,7 +110,7 @@ pub const Matrix = struct {
         if (left.rows != right.rows or left.cols != right.cols or left.type != right.type) {
             return matrixEvalError.InvalidDimensions;
         }
-        var result = try Matrix.from(allocator,left);
+        var result = try Matrix.from(allocator, left);
         // const t: type = if (left.type == .Float) f64 else i64;
         for (0..left.rows) |row| {
             for (0..left.cols) |col| {
@@ -132,7 +132,8 @@ pub const Matrix = struct {
         if (left.cols != right.rows) {
             return matrixEvalError.InvalidDimensions;
         }
-        var result = try Matrix.from(allocator,left);
+        var result = try Matrix.new(allocator, left.rows, right.cols, null);
+        std.debug.print("rows: {}, cols: {}\n", .{ left.rows, left.cols });
         for (0..left.rows) |row| {
             for (0..right.cols) |col| {
                 var sum: i64 = 0;
@@ -147,6 +148,7 @@ pub const Matrix = struct {
                         sum += @bitCast(f1 * f2);
                     }
                 }
+                std.debug.print("row: {}, col: {}\n", .{ row, col });
                 result.data[row][col] = @bitCast(sum);
             }
         }
@@ -179,6 +181,7 @@ pub const Matrix = struct {
     }
 
     pub fn deinit(self: Matrix, allocator: std.mem.Allocator) void {
+        std.debug.print("deinit\n", .{});
         for (self.data) |row| {
             allocator.free(row);
         }
