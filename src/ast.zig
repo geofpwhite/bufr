@@ -15,7 +15,10 @@ pub const ast = struct {
         // for (self.statements.?.items) |*statement| {
         //     statement.deinit(allocator);
         // }
-        self.statements.?.deinit(allocator);
+        if (self.statements) |stmts| {
+            var x = stmts;
+            x.deinit(allocator);
+        }
     }
     pub fn print(self: *ast, allocator: std.mem.Allocator) !void {
         if (self.statements) |statements| {
