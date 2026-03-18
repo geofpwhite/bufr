@@ -12,12 +12,8 @@ pub const ast = struct {
     statements: ?std.ArrayList(Node),
 
     pub fn deinit(self: *ast, allocator: std.mem.Allocator) void {
-        // for (self.statements.?.items) |*statement| {
-        //     statement.deinit(allocator);
-        // }
-        if (self.statements) |stmts| {
-            var x = stmts;
-            x.deinit(allocator);
+        if (self.statements) |*stmts| {
+            stmts.deinit(allocator);
         }
     }
     pub fn print(self: *ast, allocator: std.mem.Allocator) !void {

@@ -1,4 +1,5 @@
 const std = @import("std");
+const Log = @import("log/log.zig");
 
 const Type = @import("types.zig").Type;
 const Variable = @import("variable.zig").variable;
@@ -37,6 +38,7 @@ pub const state = struct {
     pub fn deinit(self: *Self) void {
         var key_iter = self.vars.iterator();
         while (key_iter.next()) |k| {
+            Log.log.debug("eval", "deinit key", null);
             k.value_ptr.*.deinit(self.allocator);
             self.allocator.destroy(k.value_ptr.*);
         }
@@ -50,8 +52,8 @@ pub const state = struct {
     }
 
     pub fn eval(self: *Self, node: Ast.Node) evalError!void {
-        if (node.value) |v| {
-            std.debug.print("eval node {}\n", .{v});
+        if (node.value) |_| {
+            Log.log.debug("eval", "eval node", null);
         }
         if (node.value) |v| switch (v) {
             .identifier => |id| {
@@ -73,7 +75,7 @@ pub const state = struct {
             .inequality => |ineq| try self.eval_inequality(node, ineq),
             .special_token => |sp| try self.eval_special_token(node, sp),
             .matrix => |mat| {
-                std.debug.print("eval matrix\n", .{});
+                Log.log.debug("eval", "eval matrix start", null);
                 try self.eval_matrix(mat);
             },
             .keyword => |kw| try self.eval_keyword(node, kw),
@@ -120,7 +122,7 @@ pub const state = struct {
     }
 
     fn eval_assignment(self: *Self, node: Ast.Node) !void {
-        std.debug.print("eval_assignment\n", .{});
+        Log.log.debug("eval", "eval_assignment", null);
         if (node.left) |left| if (left.value) |value| {
             switch (value) {
                 .identifier => |name| if (node.right) |right| {
@@ -144,7 +146,7 @@ pub const state = struct {
                     if (self.cur_return) |cr| {
                         if (left.right) |left_right| {
                             // std.debug.print("left.right = {any}\n", .{left});
-                            std.debug.print("left.right = {any}\n", .{left_right});
+                            Log.log.debug("eval", "left.right present", null);
                             // std.debug.print("right = {any}\n", .{right});
                             var namedVar = cr;
                             namedVar.name = left_right.value.?.identifier;
@@ -152,15 +154,15 @@ pub const state = struct {
                             va.* = namedVar;
                             try self.vars.put(left_right.value.?.identifier, va);
                         } else {
-                            if (self.vars.get("y")) |y| {
-                                std.debug.print("var: {any}\n", .{y});
+                            if (self.vars.get("y")) |_| {
+                                Log.log.debug("eval", "var found y", null);
                             }
                             return evalError.SyntaxError;
                         }
                     }
                 } else {
-                    std.debug.print("type: {any}\n", .{kw});
-                    std.debug.print("right: {any}\n", .{node.right});
+                    Log.log.warn("eval", "unexpected keyword type", null);
+                    Log.log.debug("eval", "right node present", null);
                     return evalError.SyntaxError;
                 },
                 else => {
@@ -194,7 +196,7 @@ pub const state = struct {
     }
 
     fn eval_matrix(self: *Self, mat: Ast.matrixValue) !void {
-        std.debug.print("eval matrix {any}\n", .{mat});
+        Log.log.debug("eval", "eval_matrix constructing matrix", null);
         self.cur_return = Variable{
             .name = "",
             .type = Type.Matrix,
@@ -240,21 +242,27 @@ pub const state = struct {
     fn special_token(self: *Self, left: Variable, right: Variable, sp: SpecialToken) !void {
         switch (sp) {
             .Dot => {
-                if (left.type == .Integer and right.type == left.type) {
-                    const l = left.data.integer;
-                    const r = right.data.integer;
+                if (left.type == right.type) {
+                    switch (left.type) {
+                        .Integer => {
+                            const l = left.data.integer;
+                            const r = right.data.integer;
 
-                    const float_string = std.fmt.allocPrint(self.allocator, "{}.{}", .{ l, r }) catch {
-                        return evalError.SyntaxError;
-                    };
-                    const float_val = std.fmt.parseFloat(f64, float_string) catch {
-                        return evalError.SyntaxError;
-                    };
-                    self.cur_return = Variable{
-                        .name = "",
-                        .type = .Float,
-                        .data = .{ .float = float_val },
-                    };
+                            const float_string = std.fmt.allocPrint(self.allocator, "{}.{}", .{ l, r }) catch {
+                                return evalError.SyntaxError;
+                            };
+                            const float_val = std.fmt.parseFloat(f64, float_string) catch {
+                                return evalError.SyntaxError;
+                            };
+                            self.cur_return = Variable{
+                                .name = "",
+                                .type = .Float,
+                                .data = .{ .float = float_val },
+                            };
+                        },
+                        .Matrix => {},
+                        else => {},
+                    }
                 }
             },
             else => {},
@@ -431,7 +439,7 @@ pub const state = struct {
                 },
                 else => return evalError.TypeMismatch,
             },
-            // .Divide => "/",
+            // .Divide => switch (left.type) {},
             // .Modulo => "%",
             // .Power => "^",
             // .And => "&",

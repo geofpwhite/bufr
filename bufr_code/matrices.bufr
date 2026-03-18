@@ -17,4 +17,3 @@ let h = 4x5 {
 };
 
 let i = g * h;
-let j = g.h;

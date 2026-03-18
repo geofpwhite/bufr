@@ -2,6 +2,7 @@ const std = @import("std");
 const operators = @import("operators.zig");
 const special_tokens = @import("special_tokens.zig");
 pub const token = @import("types.zig").token;
+const Log = @import("log/log.zig");
 
 pub const lexer = struct {
     input: []const u8,
@@ -40,7 +41,7 @@ pub const lexer = struct {
             const index = std.mem.indexOf(u8, ">=<&|/", slice);
             if ((o != null or s != null) and index == null) {
                 if (self.ch == '=') {
-                    std.debug.print("Equal sign found\n", .{});
+                    Log.log.debug("lexer", "Equal sign found", null);
                 }
                 try self.addCur(&tokens, allocator);
                 self.buffer[0] = self.ch;
@@ -51,7 +52,9 @@ pub const lexer = struct {
 
             switch (self.ch) {
                 '/' => {
-                    std.debug.print("Slash found {d}\n", .{tokens.items.len});
+                    const msg = try std.fmt.allocPrint(allocator, "Slash found {d}", .{tokens.items.len});
+                    defer allocator.free(msg);
+                    Log.log.debug("lexer", msg, null);
                     if (tokens.items.len > 0) {
                         const prev = (tokens.items[tokens.items.len - 1]);
                         if (std.mem.eql(u8, slice, prev)) {
@@ -129,7 +132,7 @@ pub const lexer = struct {
                 '=' => {
                     const prev = (tokens.items[tokens.items.len - 1]);
                     if (prev[0] == '=' or prev[0] == '<' or prev[0] == '>') {
-                        std.debug.print("Equal sign found\n", .{});
+                        Log.log.debug("lexer", "Equal sign found", null);
 
                         // change prev from "=" to "=="
                         const hold = prev[0];
@@ -180,7 +183,9 @@ test "lexer" {
     }
 
     for (tokens.items) |tok| {
-        std.debug.print("token: {s}\n", .{tok});
+        const msg = try std.fmt.allocPrint(allocator, "token: {s}", .{tok});
+        Log.log.debug("lexer", msg, null);
+        allocator.free(msg);
     }
     try std.testing.expectEqual(tokens.items.len, 17);
     try std.testing.expectEqualStrings("let", tokens.items[0]);
