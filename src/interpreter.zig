@@ -1,4 +1,5 @@
 const std = @import("std");
+const Log = @import("log/log.zig");
 
 const Ast = @import("ast.zig");
 const Lexer = @import("lexer.zig").lexer;
@@ -30,13 +31,13 @@ pub fn execute(path: []const u8, allocator: std.mem.Allocator) !void {
     }
     var iter = eval.vars.keyIterator();
     while (iter.next()) |k| {
-        std.debug.print("{any} = {any}\n", .{ k, eval.vars.get(k.*) });
+        Log.log.debug("interpreter", k.*, null);
     }
 }
 
 test "lex and parse" {
     const eql = @intFromEnum(Operator.Add) > @intFromEnum(Operator.Subtract);
-    std.debug.print("Operator precedence: {any}\n", .{eql});
+    Log.log.debug("test", if (eql) "Add > Subtract" else "Add <= Subtract", null);
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     const input = "let x = 6x6;";
@@ -55,7 +56,7 @@ test "lex and parse" {
         _ = gpa.deinit();
     }
     if (ast.statements) |stmts| {
-        std.debug.print("AST: {any}\n", .{stmts.items[0]});
+        Log.log.debug("test", "AST parsed", null);
         for (stmts.items) |stmt| {
             var s = stmt;
             if (stmt.value) |_| {

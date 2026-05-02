@@ -332,6 +332,7 @@ pub const state = struct {
                                 .type = .Bool,
                             };
                         },
+                        .String => unreachable,
                     }
                 }
             },

@@ -3,30 +3,23 @@ const execute = @import("interpreter.zig").execute;
 const Log = @import("log/log.zig");
 
 pub fn main() !void {
-    // std.debug.print("{}", try isLucky(5));
-    // std.debug.print("asdflkjadsf", .{});
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    // Initialize logger (defaults are reasonable; set explicitly here).
-    // Toggle between `.Json` and `.KV` as desired.
+    // Configure the global logger. Toggle .Json / .KV and level as needed.
     Log.log.setMode(.KV);
-    Log.log.setLevel(Log.Level.Debug);
+    Log.log.setLevel(.Error);
 
     var args = try std.process.argsWithAllocator(allocator);
-    // var child = std.process.Child.initWithAllocator(allocator, args);
     defer args.deinit();
 
-    _ = args.next();
+    _ = args.next(); // skip executable name
     if (args.next()) |arg| {
-        // Log start of execution (target = "main", message = path)
-        try Log.log.info("main", arg);
+        Log.log.info("main", arg, null);
         try execute(arg, allocator);
-        // Log finish
-        try Log.log.info("main", "execution finished");
+        Log.log.info("main", "execution finished", null);
     } else {
-        try Log.log.errorf("main", "no file provided");
+        Log.log.errorf("main", "no file provided", null);
     }
-    // try execute(args);
 }

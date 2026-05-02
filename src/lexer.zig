@@ -81,6 +81,19 @@ pub const lexer = struct {
                 ' ', '\n', '\r' => {
                     try self.addCur(&tokens, allocator);
                 },
+                '"', '\'' => {
+                    const delim = self.ch;
+
+                    self.buffer[self.bufferPosition] = self.ch;
+                    self.bufferPosition += 1;
+                    while (self.readChar() and (self.ch != delim)) {
+                        self.buffer[self.bufferPosition] = self.ch;
+                        self.bufferPosition += 1;
+                    }
+                    self.buffer[self.bufferPosition] = self.ch;
+                    self.bufferPosition += 1;
+                    try self.addCur(&tokens, allocator);
+                },
 
                 '|', '&' => {
                     const prev = (tokens.items[tokens.items.len - 1]);
@@ -171,7 +184,7 @@ pub const lexer = struct {
 test "lexer" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var lex = lexer.new("let x = 12; let y = 14; let z = x + y ;");
+    var lex = lexer.new("let x = 12; let y = 14; let z = x + y ; let s = \"asdf  f\"");
     var tokens = try lex.tokenize(allocator);
     defer {
         // free each token slice
@@ -187,7 +200,7 @@ test "lexer" {
         Log.log.debug("lexer", msg, null);
         allocator.free(msg);
     }
-    try std.testing.expectEqual(tokens.items.len, 17);
+    try std.testing.expectEqual(tokens.items.len, 21);
     try std.testing.expectEqualStrings("let", tokens.items[0]);
     try std.testing.expectEqualStrings("x", tokens.items[1]);
 }

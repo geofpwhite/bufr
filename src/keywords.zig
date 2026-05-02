@@ -10,6 +10,7 @@ pub const Keyword = enum {
     Continue,
     Fn,
     Let,
+    Print,
 
     pub fn toString(self: Keyword) []const u8 {
         return switch (self) {
@@ -22,6 +23,7 @@ pub const Keyword = enum {
             .Continue => "continue",
             .Fn => "fn",
             .Let => "let",
+            .Print => "print",
         };
     }
 };
@@ -36,4 +38,5 @@ pub const KEYWORD_MAP = std.StaticStringMap(Keyword).initComptime(.{
     .{ "continue", .Continue },
     .{ "fn", .Fn },
     .{ "let", .Let },
+    .{ "print", .Print },
 });

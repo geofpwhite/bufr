@@ -1,4 +1,5 @@
 const std = @import("std");
+const Log = @import("log/log.zig");
 
 const operator = @import("operators.zig").Operator;
 const inequality = @import("operators.zig").Inequality;
@@ -32,19 +33,19 @@ pub const Node = struct {
     pub fn print(node: *Node, allocator: std.mem.Allocator) !void {
         if (node.value) |value| {
             const str = try value.toString(allocator);
-            std.debug.print("Node: {s}\n", .{str});
+            Log.log.debug("ast", str, null);
             allocator.free(str);
             if (node.left) |left| {
-                std.debug.print("left: {any}\n", .{left});
+                Log.log.debug("ast", "left node present", null);
                 try left.print(allocator);
             } else {
-                std.debug.print("Left: {any}\n", .{node.left});
+                Log.log.debug("ast", "left node null", null);
             }
             if (node.right) |right| {
-                std.debug.print("right: {any}\n", .{right});
+                Log.log.debug("ast", "right node present", null);
                 try right.print(allocator);
             } else {
-                std.debug.print("Right: {any}\n", .{node.right});
+                Log.log.debug("ast", "right node null", null);
             }
         }
     }
@@ -63,7 +64,12 @@ pub const Node = struct {
     }
 };
 
-pub const matrixValue = struct { rows: usize, cols: usize, elementType: ?matrixType, values: ?[]token };
+pub const matrixValue = struct {
+    rows: usize,
+    cols: usize,
+    elementType: ?matrixType,
+    values: ?[]token,
+};
 
 pub fn matrixNode(rows: usize, cols: usize) !matrixValue {
     return matrixValue{

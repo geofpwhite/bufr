@@ -1,4 +1,5 @@
 const std = @import("std");
+const Log = @import("log/log.zig");
 
 const keyword = @import("keywords.zig").Keyword;
 const KEYWORD_MAP = @import("keywords.zig").KEYWORD_MAP;
@@ -57,14 +58,14 @@ pub const parser = struct {
         const id = expression;
 
         if (std.fmt.parseInt(i64, id, 10)) |n| {
-            std.debug.print("integer parsed\n", .{});
+            Log.log.debug("parser", "integer parsed", null);
             newNode.*.value = .{ .integer = n };
             if (self.input.len > index + 1 and self.input[index][0] == '.' and self.input[index + 1][0] >= '0' and self.input[index + 1][0] <= '9') {
                 const float_string = std.mem.concat(self.allocator, u8, &.{ expression, ".", self.input[index + 1] }) catch {
                     return parserError.AllocFailed;
                 };
                 defer self.allocator.free(float_string);
-                std.debug.print("float\n\n", .{});
+                Log.log.debug("parser", "float parsed", null);
                 if (std.fmt.parseFloat(f64, float_string)) |f| {
                     newNode.*.value = .{ .float = f };
                 } else |_| {}
@@ -131,11 +132,11 @@ pub const parser = struct {
                 if (root) {
                     newNode.left = cur.right;
                     cur.right = newNode;
-                    std.debug.print("Dot token root found {any}\n", .{cur.right});
+                    Log.log.debug("parser", "dot token root found", null);
                 } else {
                     newNode.left = cur;
                     cur.* = newNode.*;
-                    std.debug.print("Dot token found {any}\n", .{cur});
+                    Log.log.debug("parser", "dot token found", null);
                 }
                 return self.parse(root, cur, index);
             },
@@ -165,7 +166,7 @@ pub const parser = struct {
         if (root) {
             return parserError.RootKeyword;
         }
-        std.debug.print("keyword scanned {any}\n", .{kw});
+        Log.log.debug("parser", "keyword scanned", null);
         const newNode = self.allocator.create(Ast.Node) catch {
             return parserError.AllocFailed;
         };
@@ -178,16 +179,19 @@ pub const parser = struct {
             return parserError.AllocFailed;
         };
         switch (kw) {
-            keyword.For => {},
-            keyword.If => {},
-            keyword.While => {},
-            keyword.Else => {},
-            keyword.Return => {},
-            keyword.Break => {},
-            keyword.Continue => {},
-            keyword.Fn => {},
-            keyword.Let => {
+            .For => {},
+            .If => {},
+            .While => {},
+            .Else => {},
+            .Return => {},
+            .Break => {},
+            .Continue => {},
+            .Fn => {},
+            .Let => {
                 return self.parse(root, newNode, index);
+            },
+            .Print => {
+                //return
             },
         }
         if (root) {
@@ -277,7 +281,7 @@ pub const parser = struct {
             return parserError.AllocFailed;
         };
         const index_x = std.mem.indexOf(u8, cur_token, "x");
-        std.debug.print("Index of 'x' in {s}: {any}\n", .{ cur_token, index_x });
+        Log.log.debug("parser", "scanning matrix init token", null);
         self.references.append(self.allocator, newNode) catch {
             return parserError.AllocFailed;
         };
@@ -321,7 +325,7 @@ pub const parser = struct {
                 newNode.left = cur;
                 cur.* = newNode.*;
             }
-            std.debug.print("index when parsing matrix node: {s}", .{self.input[next_index]});
+            Log.log.debug("parser", "matrix node parsed", null);
             return self.parse(root, cur, next_index + 1);
         } else {
             return parserError.InvalidToken;
@@ -336,8 +340,8 @@ pub const parser = struct {
         if (index >= self.input.len) {
             return self.statements;
         }
-        std.debug.print("Current Token: {s}\n", .{self.input[index]});
-        std.debug.print("Current Node: {any}\n", .{cur});
+        Log.log.debug("parser", self.input[index], null);
+        Log.log.debug("parser", "parsing node", null);
         const cur_token = self.input[index];
         const new_index = index + 1;
         if (KEYWORD_MAP.get(cur_token)) |kw| {
@@ -345,7 +349,7 @@ pub const parser = struct {
         }
 
         if (OPERATOR_MAP.get(cur_token)) |opp| {
-            std.debug.print("Operator: {any}\n", .{opp});
+            Log.log.debug("parser", "operator found", null);
             return self.parse_operator(root, cur, new_index, opp);
         }
         const ineq = INEQUALITY_MAP.get(cur_token);
@@ -358,7 +362,7 @@ pub const parser = struct {
             return self.parse_special_token(root, cur, new_index, spec);
         }
         if (try self.scan_for_matrix_init(cur_token)) {
-            std.debug.print("matrix init scanned\n", .{});
+            Log.log.debug("parser", "matrix init scanned", null);
             return self.parse_matrix(root, cur, new_index, cur_token);
         }
 
