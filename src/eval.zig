@@ -17,8 +17,8 @@ const evalError = error{
     TypeMismatch,
     UndefinedVariable,
     InvalidType,
+    OutOfMemory,
 };
-
 pub const state = struct {
     ast: Ast.ast,
     vars: std.StringHashMap(*Variable),
@@ -78,7 +78,7 @@ pub const state = struct {
                 Log.log.debug("eval", "eval matrix start", null);
                 try self.eval_matrix(mat);
             },
-            .keyword => |kw| try self.eval_keyword(node, kw),
+            .keyword => |kw| self.eval_keyword(node, kw) catch return evalError.OutOfMemory,
             .boolean => |b| try self.eval_boolean(b),
         };
     }
@@ -197,6 +197,7 @@ pub const state = struct {
 
     fn eval_matrix(self: *Self, mat: Ast.matrixValue) !void {
         Log.log.debug("eval", "eval_matrix constructing matrix", null);
+        std.debug.print("{any}", .{mat});
         self.cur_return = Variable{
             .name = "",
             .type = Type.Matrix,
@@ -223,8 +224,6 @@ pub const state = struct {
     }
 
     fn eval_keyword(self: *Self, node: Ast.Node, kw: Keyword) !void {
-        _ = self;
-        _ = node;
         switch (kw) {
             // .For => "for",
             // .If => "if",
@@ -235,6 +234,30 @@ pub const state = struct {
             // .Continue => "continue",
             // .Fn => "fn",
             .Let => return evalError.SyntaxError,
+            .Print => {
+                Log.log.debug("printing", "printing", &[_]Log.Field{.{ .key = "print", .value = "print" }});
+                if (node.right) |r| {
+                    try self.eval(r.*);
+                    if (self.cur_return) |v| {
+                        std.debug.print("{any}\n", .{v.data});
+                        switch (v.data) {
+                            .matrix => |m| {
+                                const s = try m.toString(self.allocator);
+                                std.debug.print("{s}\n", .{s});
+                                self.allocator.free(s);
+                                // for (m.data) |row| {
+                                //     std.debug.print("[ ", .{});
+                                //     for (row) |num| {
+                                //         std.debug.print("{d} ", .{num});
+                                //     }
+                                //     std.debug.print("]\n", .{});
+                                // }
+                            },
+                            else => {},
+                        }
+                    }
+                }
+            },
             else => {},
         }
     }

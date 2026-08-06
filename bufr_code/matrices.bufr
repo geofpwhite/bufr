@@ -8,6 +8,7 @@ let g = 5x4 {
     13 14 15 16
     17 18 19 20
 };
+print g;
 
 let h = 4x5 {
     1 2 3 4 5
@@ -17,3 +18,7 @@ let h = 4x5 {
 };
 
 let i = g * h;
+
+print i;
+
+print (1x1 { 1 });

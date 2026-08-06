@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - '**'
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Zig
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zig
+          zig version
+
+      - name: Run Zig tests
+        run: |
+          # Build and run the project's test steps defined in build.zig
+          # `zig build test` will run the tests defined by the build script.
+          zig build test

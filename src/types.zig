@@ -59,28 +59,35 @@ pub const Matrix = struct {
 
     pub fn new(allocator: std.mem.Allocator, rows: usize, cols: usize, values: ?[][]const u8) !Matrix {
         Log.log.debug("types", "matrix new called", null);
-        var full_data = std.ArrayList([]u64).empty;
-        var data = std.ArrayList(u64).empty;
-        for (0..rows) |_| {
-            for (0..cols) |_| {
-                try data.append(allocator, @as(u64, 0));
-            }
-            try full_data.append(allocator, try data.toOwnedSlice(allocator));
-            data = std.ArrayList(u64).empty;
+        const full_data = try allocator.alloc([]u64, rows);
+        for (full_data) |*row| {
+            row.* = try allocator.alloc(u64, cols);
+            @memset(row.*, 0);
         }
-        //TODO: scan values & determine type
-        if (values) |vs| {
-            // const total_nums = rows * cols;
 
+        var t = MatrixType.Integer;
+        if (values) |vs| {
             for (vs) |value| {
-                Log.log.debug("types", value, null);
+                if (std.mem.indexOfScalar(u8, value, '.') != null) {
+                    t = MatrixType.Float;
+                    break;
+                }
+            }
+            for (vs, 0..) |value, idx| {
+                if (idx >= rows * cols) break;
+                const row = idx / cols;
+                const col = idx % cols;
+                full_data[row][col] = if (t == .Float)
+                    @bitCast(try std.fmt.parseFloat(f64, value))
+                else
+                    @bitCast(try std.fmt.parseInt(i64, value, 10));
             }
         }
-        const t = MatrixType.Integer;
+
         return Matrix{
             .rows = rows,
             .cols = cols,
-            .data = try full_data.toOwnedSlice(allocator),
+            .data = full_data,
             .type = t,
         };
     }
@@ -165,7 +172,30 @@ pub const Matrix = struct {
         allocator.free(self.data);
     }
 
-    pub fn toString(_: Matrix) []const u8 {
-        return "matrix";
+    pub fn toString(m: Matrix, allocator: std.mem.Allocator) ![]const u8 {
+        var ary: std.ArrayList(u8) = .empty;
+        errdefer ary.deinit(allocator);
+
+        for (0..m.rows) |row| {
+            try ary.append(allocator, '[');
+            for (0..m.cols) |col| {
+                if (col != 0) try ary.appendSlice(allocator, ", ");
+                if (m.type == .Float) {
+                    const f: f64 = @bitCast(m.data[row][col]);
+                    const num_str = try std.fmt.allocPrint(allocator, "{d}", .{f});
+                    defer allocator.free(num_str);
+                    try ary.appendSlice(allocator, num_str);
+                } else {
+                    const i: i64 = @bitCast(m.data[row][col]);
+                    const num_str = try std.fmt.allocPrint(allocator, "{d}", .{i});
+                    defer allocator.free(num_str);
+                    try ary.appendSlice(allocator, num_str);
+                }
+            }
+            try ary.append(allocator, ']');
+            if (row != m.rows - 1) try ary.append(allocator, '\n');
+        }
+
+        return ary.toOwnedSlice(allocator);
     }
 };

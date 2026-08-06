@@ -58,7 +58,11 @@ pub const parser = struct {
         const id = expression;
 
         if (std.fmt.parseInt(i64, id, 10)) |n| {
-            Log.log.debug("parser", "integer parsed", null);
+            Log.log.debug(
+                "parser",
+                "integer parsed",
+                &[_]Log.Field{.{ .key = "int parsed", .value = id }},
+            );
             newNode.*.value = .{ .integer = n };
             if (self.input.len > index + 1 and self.input[index][0] == '.' and self.input[index + 1][0] >= '0' and self.input[index + 1][0] <= '9') {
                 const float_string = std.mem.concat(self.allocator, u8, &.{ expression, ".", self.input[index + 1] }) catch {

@@ -9,7 +9,7 @@ pub fn main() !void {
 
     // Configure the global logger. Toggle .Json / .KV and level as needed.
     Log.log.setMode(.KV);
-    Log.log.setLevel(.Error);
+    Log.log.setLevel(.Debug);
 
     var args = try std.process.argsWithAllocator(allocator);
     defer args.deinit();
